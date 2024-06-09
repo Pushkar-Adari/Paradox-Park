@@ -4,9 +4,10 @@ const ctx = canvas.getContext('2d');
 const PLAYER_WIDTH = 70;
 const PLAYER_HEIGHT = 70;
 const PLAYER_GRAVITY = 0.3;
-const PLAYER_JUMP_STRENGTH = 10;
-const PLATFORM_WIDTH = 100;
-const PLATFORM_HEIGHT = 20;
+const PLAYER_JUMP_STRENGTH = 11;
+const PLATFORM_WIDTH = 47;
+const PLATFORM_HEIGHT = 15;
+let highestPlatformY = canvas.height; // Start with the initial platforms
 
 let idleImage = new Image();
 idleImage.src = 'idle.png'; 
@@ -56,11 +57,7 @@ let platforms = [
     { x: 1080, y: canvas.height - PLATFORM_HEIGHT, width: PLATFORM_WIDTH, height: PLATFORM_HEIGHT },
     { x: 1170, y: canvas.height - PLATFORM_HEIGHT, width: PLATFORM_WIDTH, height: PLATFORM_HEIGHT },
     { x: 1260, y: canvas.height - PLATFORM_HEIGHT, width: PLATFORM_WIDTH, height: PLATFORM_HEIGHT },
-    { x: 1350, y: canvas.height - PLATFORM_HEIGHT, width: PLATFORM_WIDTH, height: PLATFORM_HEIGHT },
-
-
-    { x: 300, y: 400, width: PLATFORM_WIDTH, height: PLATFORM_HEIGHT },
-    { x: 500, y: 300, width: PLATFORM_WIDTH, height: PLATFORM_HEIGHT }
+    { x: 1350, y: canvas.height - PLATFORM_HEIGHT, width: PLATFORM_WIDTH, height: PLATFORM_HEIGHT }
 ];
 
 function drawPlayer() {
@@ -124,7 +121,7 @@ function drawPlayer() {
 
 function drawPlatforms() {
     platforms.forEach(platform => {
-        ctx.drawImage(platformImage, platform.x, platform.y, platform.width, platform.height)
+        ctx.drawImage(platformImage, platform.x, platform.y, platform.width, platform.height);
     });
 }
 
@@ -138,6 +135,15 @@ function applyGravity() {
         player.onGround = true;
     } else {
         player.onGround = false;
+    }
+    
+    if (player.y < canvas.height / 2) {
+        const scrollAmount = canvas.height / 2 - player.y;
+        player.y = canvas.height / 2;
+        platforms.forEach(platform => {
+            platform.y += scrollAmount;
+        });
+        highestPlatformY += scrollAmount;
     }
 }
 
@@ -181,12 +187,65 @@ function update() {
     } else if (player.dx > 0) {
         player.facing = 'right';
     }
+
+    // Ensure new platforms are generated as needed
+    generateNewPlatforms();
+
+    // Remove platforms that are no longer visible
+    platforms = platforms.filter(platform => platform.y < canvas.height);
+
+    // Update highest platform Y
+    highestPlatformY = Math.min(...platforms.map(platform => platform.y));
 }
 
 function clearCanvas() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
+function generateNewPlatforms() {
+    const maxJumpDistance = 150; // Max horizontal jump distance
+    const clusterSize = 3; // Number of platforms in a cluster
+    const clusterWidth = PLATFORM_WIDTH * clusterSize; // Width of a cluster
+    const clusterGap = 50; // Gap between clusters
+    const maxClusterHeight = 200; // Max height difference between clusters
+
+    // Calculate the middle 50% range of the canvas
+    const leftBound = canvas.width * 0.25;
+    const rightBound = canvas.width * 0.75 - PLATFORM_WIDTH;
+
+    while (highestPlatformY > player.y - canvas.height) {
+        // Determine if we want to create a cluster or a single platform
+        const isCluster = Math.random() < 0.5; // 50% chance to create a cluster
+
+        if (isCluster) {
+            // Create a cluster of platforms
+            const clusterX = Math.random() * (rightBound - leftBound - clusterWidth) + leftBound;
+            const clusterY = highestPlatformY - (Math.random() * 50 + maxClusterHeight / clusterSize);
+            
+            for (let i = 0; i < clusterSize; i++) {
+                platforms.push({
+                    x: clusterX + i * PLATFORM_WIDTH,
+                    y: clusterY,
+                    width: PLATFORM_WIDTH,
+                    height: PLATFORM_HEIGHT
+                });
+            }
+
+            highestPlatformY = clusterY;
+        } else {
+            // Create a single platform
+            let newPlatformX = player.x + (Math.random() * 2 - 1) * maxJumpDistance;
+
+            // Ensure the new platform stays within the middle 50% of the canvas
+            newPlatformX = Math.max(leftBound, Math.min(newPlatformX, rightBound));
+
+            const newPlatformY = highestPlatformY - (Math.random() * 50 + maxClusterHeight / clusterSize);
+
+            platforms.push({ x: newPlatformX, y: newPlatformY, width: PLATFORM_WIDTH, height: PLATFORM_HEIGHT });
+            highestPlatformY = newPlatformY;
+        }
+    }
+}
 function gameLoop() {
     clearCanvas();
     drawPlatforms();
