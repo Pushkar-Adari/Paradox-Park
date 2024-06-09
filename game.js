@@ -8,7 +8,7 @@ const PLAYER_GRAVITY = 1;
 const PLAYER_JUMP_STRENGTH = 20;
 const PLATFORM_WIDTH = 100;
 const PLATFORM_HEIGHT = 20;
-const PLATFORM_COLOR = 'black';
+const PLATFORM_COLOR = 'white';
 
 let player = {
     x: 100,
