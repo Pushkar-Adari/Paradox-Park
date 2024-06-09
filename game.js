@@ -16,8 +16,7 @@ let jumpImage = new Image();
 jumpImage.src = 'jump.png'; 
 let platformImage = new Image();
 platformImage.src = 'grass.png';
-let fireImg = new Image();
-fireImg.src = 'fire.png'
+
 let player = {
     x: 100,
     y: canvas.height - PLAYER_HEIGHT - 100,
@@ -59,13 +58,40 @@ let platforms = [
     { x: 1260, y: canvas.height - PLATFORM_HEIGHT, width: PLATFORM_WIDTH, height: PLATFORM_HEIGHT },
     { x: 1350, y: canvas.height - PLATFORM_HEIGHT, width: PLATFORM_WIDTH, height: PLATFORM_HEIGHT }
 ];
-const firePlatform = {
-    x: 0,
-    y: canvas.height - 100, 
-    width: canvas.width,
-    height: 100,
-    isFire: true 
-};
+const fireImage = new Image();
+fireImage.src = 'fire.png';
+
+const FIRE_FRAME_WIDTH = 72;
+const FIRE_FRAME_HEIGHT = 72;
+const FIRE_FRAME_COUNT = 8;
+let fireFrameIndex = 0;
+const FIRE_ANIMATION_SPEED = 10; 
+let fireAnimationCounter = 0;
+
+const FIRE_COUNT = 20; 
+const FIRE_SPACING = canvas.width / FIRE_COUNT;
+
+function drawFire() {
+    for (let i = 0; i < FIRE_COUNT; i++) {
+        ctx.drawImage(
+            fireImage,
+            fireFrameIndex * FIRE_FRAME_WIDTH,
+            0,
+            FIRE_FRAME_WIDTH,
+            FIRE_FRAME_HEIGHT,
+            i * FIRE_SPACING,  
+            canvas.height - FIRE_FRAME_HEIGHT,  
+            FIRE_FRAME_WIDTH,
+            FIRE_FRAME_HEIGHT
+        );
+    }
+
+    if (fireAnimationCounter % FIRE_ANIMATION_SPEED === 0) {
+        fireFrameIndex = (fireFrameIndex + 1) % FIRE_FRAME_COUNT;
+    }
+
+    fireAnimationCounter++;
+}
 function drawPlayer() {
     let currentImage;
     let frameCount;
@@ -129,7 +155,6 @@ function drawPlatforms() {
     platforms.forEach(platform => {
         ctx.drawImage(platformImage, platform.x, platform.y, platform.width, platform.height);
     });
-    ctx.drawImage(fireImg, firePlatform.x, firePlatform.y, firePlatform.width, firePlatform.height);
 
 }
 
@@ -154,18 +179,9 @@ function applyGravity() {
         highestPlatformY += scrollAmount;
     }
 }
-function onFall(){
 
-}
 function detectCollisions() {
-    if (
-        player.x < firePlatform.x + firePlatform.width &&
-        player.x + player.width > firePlatform.x &&
-        player.y < firePlatform.y + firePlatform.height &&
-        player.y + player.height > firePlatform.y
-    ) {
-        endGame(); 
-    }
+    
     platforms.forEach(platform => {
         if (player.x < platform.x + platform.width &&
             player.x + player.width > platform.x &&
@@ -221,19 +237,16 @@ function clearCanvas() {
 }
 
 function generateNewPlatforms() {
-    const maxJumpDistance = 150; // Max horizontal jump distance
-    const clusterSize = 2; // Number of platforms in a cluster
-    const clusterWidth = PLATFORM_WIDTH * clusterSize; // Width of a cluster
-    const clusterGap = 50; // Gap between clusters
-    const maxClusterHeight = 200; // Max height difference between clusters
-
-    // Calculate the middle 50% range of the canvas
+    const maxJumpDistance = 150; 
+    const clusterSize = 2; 
+    const clusterWidth = PLATFORM_WIDTH * clusterSize; 
+    const clusterGap = 50; 
+    const maxClusterHeight = 200; 
     const leftBound = canvas.width * 0.25;
     const rightBound = canvas.width * 0.75 - PLATFORM_WIDTH;
 
     while (highestPlatformY > player.y - canvas.height) {
-        // Determine if we want to create a cluster or a single platform
-        const isCluster = Math.random() < 0.2; // 50% chance to create a cluster
+        const isCluster = Math.random() < 0.2; 
 
         if (isCluster) {
             // Create a cluster of platforms
@@ -251,10 +264,8 @@ function generateNewPlatforms() {
 
             highestPlatformY = clusterY;
         } else {
-            // Create a single platform
             let newPlatformX = player.x + (Math.random() * 2 - 1) * maxJumpDistance;
 
-            // Ensure the new platform stays within the middle 50% of the canvas
             newPlatformX = Math.max(leftBound, Math.min(newPlatformX, rightBound));
 
             const newPlatformY = highestPlatformY - (Math.random() * 50 + maxClusterHeight / clusterSize);
@@ -266,8 +277,11 @@ function generateNewPlatforms() {
 }
 function gameLoop() {
     clearCanvas();
+
     drawPlatforms();
     drawPlayer();
+    drawFire(); 
+
     update();
     requestAnimationFrame(gameLoop);
 }
