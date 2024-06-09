@@ -4,7 +4,7 @@ const ctx = canvas.getContext('2d');
 const PLAYER_WIDTH = 70;
 const PLAYER_HEIGHT = 70;
 const PLAYER_GRAVITY = 0.3;
-const PLAYER_JUMP_STRENGTH = 12;
+const PLAYER_JUMP_STRENGTH = 13;
 const PLATFORM_WIDTH = 100;
 const PLATFORM_HEIGHT = 20;
 let highestPlatformY = canvas.height;
@@ -16,7 +16,8 @@ let jumpImage = new Image();
 jumpImage.src = 'jump.png'; 
 let platformImage = new Image();
 platformImage.src = 'grass.png';
-
+let backImage = new Image(); 
+backImage.src = 'back.jpg';
 let player = {
     x: 100,
     y: canvas.height - PLAYER_HEIGHT - 100,
@@ -71,6 +72,8 @@ let fireAnimationCounter = 0;
 const FIRE_COUNT = 20; 
 const FIRE_SPACING = canvas.width / FIRE_COUNT;
 
+let fireStarted = false;
+
 function drawFire() {
     for (let i = 0; i < FIRE_COUNT; i++) {
         ctx.drawImage(
@@ -92,6 +95,7 @@ function drawFire() {
 
     fireAnimationCounter++;
 }
+
 function drawPlayer() {
     let currentImage;
     let frameCount;
@@ -179,7 +183,9 @@ function applyGravity() {
         highestPlatformY += scrollAmount;
     }
 }
-
+function drawBackground() {
+    ctx.drawImage(backImage, 0, 0, canvas.width, canvas.height);
+}
 function detectCollisions() {
     
     platforms.forEach(platform => {
@@ -264,7 +270,7 @@ function generateNewPlatforms() {
 
             highestPlatformY = clusterY;
         } else {
-            let newPlatformX = player.x + (Math.random() * 2 - 1) * maxJumpDistance;
+            let newPlatformX = player.x + (Math.random() * 2 - 1) * maxJumpDistance -5;
 
             newPlatformX = Math.max(leftBound, Math.min(newPlatformX, rightBound));
 
@@ -275,12 +281,16 @@ function generateNewPlatforms() {
         }
     }
 }
+
 function gameLoop() {
     clearCanvas();
+    drawBackground();
 
     drawPlatforms();
     drawPlayer();
-    drawFire(); 
+    if (fireStarted) {
+        drawFire();
+    }
 
     update();
     requestAnimationFrame(gameLoop);
@@ -308,4 +318,7 @@ Promise.all([
     new Promise((resolve) => { jumpImage.onload = resolve; }),
 ]).then(() => {
     gameLoop();
+    setTimeout(() => {
+        fireStarted = true;
+    }, 5000); 
 });
