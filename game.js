@@ -4,11 +4,10 @@ const ctx = canvas.getContext('2d');
 const PLAYER_WIDTH = 70;
 const PLAYER_HEIGHT = 70;
 const PLAYER_GRAVITY = 0.3;
-const PLAYER_JUMP_STRENGTH = 11;
-const PLATFORM_WIDTH = 47;
-const PLATFORM_HEIGHT = 15;
-let highestPlatformY = canvas.height; // Start with the initial platforms
-
+const PLAYER_JUMP_STRENGTH = 12;
+const PLATFORM_WIDTH = 100;
+const PLATFORM_HEIGHT = 20;
+let highestPlatformY = canvas.height;
 let idleImage = new Image();
 idleImage.src = 'idle.png'; 
 let runImage = new Image();
@@ -17,7 +16,8 @@ let jumpImage = new Image();
 jumpImage.src = 'jump.png'; 
 let platformImage = new Image();
 platformImage.src = 'grass.png';
-
+let fireImg = new Image();
+fireImg.src = 'fire.png'
 let player = {
     x: 100,
     y: canvas.height - PLAYER_HEIGHT - 100,
@@ -59,7 +59,13 @@ let platforms = [
     { x: 1260, y: canvas.height - PLATFORM_HEIGHT, width: PLATFORM_WIDTH, height: PLATFORM_HEIGHT },
     { x: 1350, y: canvas.height - PLATFORM_HEIGHT, width: PLATFORM_WIDTH, height: PLATFORM_HEIGHT }
 ];
-
+const firePlatform = {
+    x: 0,
+    y: canvas.height - 100, 
+    width: canvas.width,
+    height: 100,
+    isFire: true 
+};
 function drawPlayer() {
     let currentImage;
     let frameCount;
@@ -123,6 +129,8 @@ function drawPlatforms() {
     platforms.forEach(platform => {
         ctx.drawImage(platformImage, platform.x, platform.y, platform.width, platform.height);
     });
+    ctx.drawImage(fireImg, firePlatform.x, firePlatform.y, firePlatform.width, firePlatform.height);
+
 }
 
 function applyGravity() {
@@ -146,8 +154,18 @@ function applyGravity() {
         highestPlatformY += scrollAmount;
     }
 }
+function onFall(){
 
+}
 function detectCollisions() {
+    if (
+        player.x < firePlatform.x + firePlatform.width &&
+        player.x + player.width > firePlatform.x &&
+        player.y < firePlatform.y + firePlatform.height &&
+        player.y + player.height > firePlatform.y
+    ) {
+        endGame(); 
+    }
     platforms.forEach(platform => {
         if (player.x < platform.x + platform.width &&
             player.x + player.width > platform.x &&
@@ -161,7 +179,10 @@ function detectCollisions() {
         }
     });
 }
-
+function endGame() {
+    console.log("Game Over");
+    cancelAnimationFrame(gameLoop);
+}
 function update() {
     applyGravity();
     detectCollisions();
@@ -188,13 +209,10 @@ function update() {
         player.facing = 'right';
     }
 
-    // Ensure new platforms are generated as needed
     generateNewPlatforms();
 
-    // Remove platforms that are no longer visible
     platforms = platforms.filter(platform => platform.y < canvas.height);
 
-    // Update highest platform Y
     highestPlatformY = Math.min(...platforms.map(platform => platform.y));
 }
 
@@ -204,7 +222,7 @@ function clearCanvas() {
 
 function generateNewPlatforms() {
     const maxJumpDistance = 150; // Max horizontal jump distance
-    const clusterSize = 3; // Number of platforms in a cluster
+    const clusterSize = 2; // Number of platforms in a cluster
     const clusterWidth = PLATFORM_WIDTH * clusterSize; // Width of a cluster
     const clusterGap = 50; // Gap between clusters
     const maxClusterHeight = 200; // Max height difference between clusters
@@ -215,7 +233,7 @@ function generateNewPlatforms() {
 
     while (highestPlatformY > player.y - canvas.height) {
         // Determine if we want to create a cluster or a single platform
-        const isCluster = Math.random() < 0.5; // 50% chance to create a cluster
+        const isCluster = Math.random() < 0.2; // 50% chance to create a cluster
 
         if (isCluster) {
             // Create a cluster of platforms
